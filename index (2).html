@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Budget Buddy</title>
+    <style>
+        /* ---------- Page background and font ---------- */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #fdf2ff, #e8f4ff);
+        }
+
+        /* ---------- Top banner ---------- */
+        .header {
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            color: white;
+            text-align: center;
+            padding: 30px 10px;
+        }
+        .header h1 { margin: 0; font-size: 34px; }
+        .header p { margin: 8px 0 0 0; font-size: 16px; }
+
+        /* ---------- Main area ---------- */
+        .container {
+            max-width: 900px;
+            margin: 25px auto;
+            padding: 0 15px;
+        }
+
+        /* ---------- Three summary cards ---------- */
+        .cards {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .card {
+            flex: 1;
+            color: white;
+            padding: 20px;
+            border-radius: 14px;
+            text-align: center;
+        }
+        .card h3 { margin: 0; font-size: 14px; font-weight: normal; }
+        .card .number { font-size: 28px; font-weight: bold; margin-top: 8px; }
+        .card-budget { background: linear-gradient(135deg, #36d1dc, #5b86e5); }
+        .card-spent  { background: linear-gradient(135deg, #ff9966, #ff5e62); }
+        .card-left   { background: linear-gradient(135deg, #56ab2f, #a8e063); }
+
+        /* ---------- White boxes ---------- */
+        .box {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+        }
+        .box h2 { margin-top: 0; color: #4a148c; }
+
+        /* ---------- Progress bar ---------- */
+        .bar-background {
+            background: #eeeeee;
+            border-radius: 20px;
+            height: 24px;
+            overflow: hidden;
+        }
+        .bar { height: 24px; border-radius: 20px; }
+        .bar-safe    { background: linear-gradient(90deg, #56ab2f, #a8e063); }
+        .bar-warning { background: linear-gradient(90deg, #f7971e, #ffd200); }
+        .bar-danger  { background: linear-gradient(90deg, #ff416c, #ff4b2b); }
+        .bar-none    { background: #cccccc; }
+
+        .alert {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .alert-safe    { background: #e6f9e6; color: #2e7d32; }
+        .alert-warning { background: #fff6d6; color: #b26a00; }
+        .alert-danger  { background: #ffe0e0; color: #c62828; }
+        .alert-none    { background: #eeeeee; color: #555555; }
+
+        /* ---------- Forms ---------- */
+        input, select {
+            padding: 10px;
+            margin: 5px 5px 5px 0;
+            border: 2px solid #e1bee7;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        button {
+            background: linear-gradient(135deg, #7b2ff7, #f107a3);
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        button:hover { opacity: 0.85; }
+        .delete-button {
+            background: #ff5e62;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        /* ---------- Category totals ---------- */
+        .category-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            margin-bottom: 6px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* ---------- Category colours (used in totals and table) ---------- */
+        .Food          { background: #ff7043; }
+        .Travel        { background: #29b6f6; }
+        .Subscriptions { background: #ab47bc; }
+        .Shopping      { background: #ec407a; }
+        .Education     { background: #26a69a; }
+        .Other         { background: #8d6e63; }
+
+        /* ---------- Expense table ---------- */
+        table { width: 100%; border-collapse: collapse; }
+        th {
+            background: #f3e5f5;
+            color: #4a148c;
+            padding: 10px;
+            text-align: left;
+        }
+        td { padding: 10px; border-bottom: 1px solid #eeeeee; }
+        .badge {
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+        .empty { color: #888888; text-align: center; padding: 15px; }
+    </style>
+</head>
+<body>
+
+    <!-- Top banner -->
+    <div class="header">
+        <h1>💸 Student Budget Buddy</h1>
+        <p>Track your pocket money for {{ month_name }}</p>
+    </div>
+
+    <div class="container">
+
+        <!-- Three summary cards -->
+        <div class="cards">
+            <div class="card card-budget">
+                <h3>Monthly Budget</h3>
+                <div class="number">₹{{ "%.2f"|format(budget) }}</div>
+            </div>
+            <div class="card card-spent">
+                <h3>Spent So Far</h3>
+                <div class="number">₹{{ "%.2f"|format(total) }}</div>
+            </div>
+            <div class="card card-left">
+                <h3>Money Left</h3>
+                <div class="number">₹{{ "%.2f"|format(left) }}</div>
+            </div>
+        </div>
+
+        <!-- Progress bar and warning -->
+        <div class="box">
+            <h2>Budget Used: {{ percent_used }}%</h2>
+            <div class="bar-background">
+                <div class="bar bar-{{ status }}" style="width: {{ bar_width }}%;"></div>
+            </div>
+
+            {% if status == "none" %}
+                <div class="alert alert-none">Set your monthly budget below to get started.</div>
+            {% elif status == "safe" %}
+                <div class="alert alert-safe">✅ You are doing great! Keep it up.</div>
+            {% elif status == "warning" %}
+                <div class="alert alert-warning">⚠️ Careful! You have used more than 80% of your budget.</div>
+            {% else %}
+                <div class="alert alert-danger">🚨 Budget crossed! Try to stop extra spending.</div>
+            {% endif %}
+        </div>
+
+        <!-- Set budget -->
+        <div class="box">
+            <h2>🎯 Set Monthly Budget</h2>
+            <form action="/budget" method="POST">
+                <input type="number" name="budget" placeholder="Amount in ₹" min="1" step="any" required>
+                <button type="submit">Save Budget</button>
+            </form>
+        </div>
+
+        <!-- Add expense -->
+        <div class="box">
+            <h2>➕ Add Expense</h2>
+            <form action="/add" method="POST">
+                <input type="text" name="title" placeholder="What did you buy?" required>
+                <input type="number" name="amount" placeholder="Amount in ₹" min="1" step="any" required>
+                <select name="category">
+                    {% for c in categories %}
+                        <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="date" value="{{ today }}" required>
+                <button type="submit">Add</button>
+            </form>
+        </div>
+
+        <!-- Spending per category -->
+        <div class="box">
+            <h2>📊 Spending by Category</h2>
+            {% if by_category %}
+                {% for name, amount in by_category.items() %}
+                    <div class="category-row {{ name }}">
+                        <span>{{ name }}</span>
+                        <span>₹{{ "%.2f"|format(amount) }}</span>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty">No expenses yet this month.</p>
+            {% endif %}
+        </div>
+
+        <!-- List of expenses -->
+        <div class="box">
+            <h2>🧾 This Month's Expenses</h2>
+            {% if expenses %}
+                <table>
+                    <tr>
+                        <th>Date</th>
+                        <th>Item</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th></th>
+                    </tr>
+                    {% for e in expenses %}
+                        <tr>
+                            <td>{{ e.date }}</td>
+                            <td>{{ e.title }}</td>
+                            <td><span class="badge {{ e.category }}">{{ e.category }}</span></td>
+                            <td>₹{{ "%.2f"|format(e.amount) }}</td>
+                            <td>
+                                <form action="/delete/{{ e.id }}" method="POST">
+                                    <button class="delete-button" type="submit">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p class="empty">No expenses added yet. Add your first one above!</p>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+</html>
